@@ -33,6 +33,9 @@ const (
 // reflection-formatted method names, remove the leading slash and convert the remaining slash to a
 // period.
 const (
+	// GTFSRealtimeServiceListVehiclesPositionsProcedure is the fully-qualified name of the
+	// GTFSRealtimeService's ListVehiclesPositions RPC.
+	GTFSRealtimeServiceListVehiclesPositionsProcedure = "/research.gtfs_realtime.v1.GTFSRealtimeService/ListVehiclesPositions"
 	// GTFSRealtimeServiceListVehiclePositionsProcedure is the fully-qualified name of the
 	// GTFSRealtimeService's ListVehiclePositions RPC.
 	GTFSRealtimeServiceListVehiclePositionsProcedure = "/research.gtfs_realtime.v1.GTFSRealtimeService/ListVehiclePositions"
@@ -40,13 +43,17 @@ const (
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	gTFSRealtimeServiceServiceDescriptor                    = v1.File_research_gtfs_realtime_v1_gtfs_realtime_proto.Services().ByName("GTFSRealtimeService")
-	gTFSRealtimeServiceListVehiclePositionsMethodDescriptor = gTFSRealtimeServiceServiceDescriptor.Methods().ByName("ListVehiclePositions")
+	gTFSRealtimeServiceServiceDescriptor                     = v1.File_research_gtfs_realtime_v1_gtfs_realtime_proto.Services().ByName("GTFSRealtimeService")
+	gTFSRealtimeServiceListVehiclesPositionsMethodDescriptor = gTFSRealtimeServiceServiceDescriptor.Methods().ByName("ListVehiclesPositions")
+	gTFSRealtimeServiceListVehiclePositionsMethodDescriptor  = gTFSRealtimeServiceServiceDescriptor.Methods().ByName("ListVehiclePositions")
 )
 
 // GTFSRealtimeServiceClient is a client for the research.gtfs_realtime.v1.GTFSRealtimeService
 // service.
 type GTFSRealtimeServiceClient interface {
+	// List positions of all vehicles of the agency
+	ListVehiclesPositions(context.Context, *connect.Request[v1.ListVehiclesPositionsRequest]) (*connect.Response[v1.ListVehiclesPositionsResponse], error)
+	// List positions of a specific vehicle of the agency
 	ListVehiclePositions(context.Context, *connect.Request[v1.ListVehiclePositionsRequest]) (*connect.Response[v1.ListVehiclePositionsResponse], error)
 }
 
@@ -61,6 +68,12 @@ type GTFSRealtimeServiceClient interface {
 func NewGTFSRealtimeServiceClient(httpClient connect.HTTPClient, baseURL string, opts ...connect.ClientOption) GTFSRealtimeServiceClient {
 	baseURL = strings.TrimRight(baseURL, "/")
 	return &gTFSRealtimeServiceClient{
+		listVehiclesPositions: connect.NewClient[v1.ListVehiclesPositionsRequest, v1.ListVehiclesPositionsResponse](
+			httpClient,
+			baseURL+GTFSRealtimeServiceListVehiclesPositionsProcedure,
+			connect.WithSchema(gTFSRealtimeServiceListVehiclesPositionsMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 		listVehiclePositions: connect.NewClient[v1.ListVehiclePositionsRequest, v1.ListVehiclePositionsResponse](
 			httpClient,
 			baseURL+GTFSRealtimeServiceListVehiclePositionsProcedure,
@@ -72,7 +85,13 @@ func NewGTFSRealtimeServiceClient(httpClient connect.HTTPClient, baseURL string,
 
 // gTFSRealtimeServiceClient implements GTFSRealtimeServiceClient.
 type gTFSRealtimeServiceClient struct {
-	listVehiclePositions *connect.Client[v1.ListVehiclePositionsRequest, v1.ListVehiclePositionsResponse]
+	listVehiclesPositions *connect.Client[v1.ListVehiclesPositionsRequest, v1.ListVehiclesPositionsResponse]
+	listVehiclePositions  *connect.Client[v1.ListVehiclePositionsRequest, v1.ListVehiclePositionsResponse]
+}
+
+// ListVehiclesPositions calls research.gtfs_realtime.v1.GTFSRealtimeService.ListVehiclesPositions.
+func (c *gTFSRealtimeServiceClient) ListVehiclesPositions(ctx context.Context, req *connect.Request[v1.ListVehiclesPositionsRequest]) (*connect.Response[v1.ListVehiclesPositionsResponse], error) {
+	return c.listVehiclesPositions.CallUnary(ctx, req)
 }
 
 // ListVehiclePositions calls research.gtfs_realtime.v1.GTFSRealtimeService.ListVehiclePositions.
@@ -83,6 +102,9 @@ func (c *gTFSRealtimeServiceClient) ListVehiclePositions(ctx context.Context, re
 // GTFSRealtimeServiceHandler is an implementation of the
 // research.gtfs_realtime.v1.GTFSRealtimeService service.
 type GTFSRealtimeServiceHandler interface {
+	// List positions of all vehicles of the agency
+	ListVehiclesPositions(context.Context, *connect.Request[v1.ListVehiclesPositionsRequest]) (*connect.Response[v1.ListVehiclesPositionsResponse], error)
+	// List positions of a specific vehicle of the agency
 	ListVehiclePositions(context.Context, *connect.Request[v1.ListVehiclePositionsRequest]) (*connect.Response[v1.ListVehiclePositionsResponse], error)
 }
 
@@ -92,6 +114,12 @@ type GTFSRealtimeServiceHandler interface {
 // By default, handlers support the Connect, gRPC, and gRPC-Web protocols with the binary Protobuf
 // and JSON codecs. They also support gzip compression.
 func NewGTFSRealtimeServiceHandler(svc GTFSRealtimeServiceHandler, opts ...connect.HandlerOption) (string, http.Handler) {
+	gTFSRealtimeServiceListVehiclesPositionsHandler := connect.NewUnaryHandler(
+		GTFSRealtimeServiceListVehiclesPositionsProcedure,
+		svc.ListVehiclesPositions,
+		connect.WithSchema(gTFSRealtimeServiceListVehiclesPositionsMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	gTFSRealtimeServiceListVehiclePositionsHandler := connect.NewUnaryHandler(
 		GTFSRealtimeServiceListVehiclePositionsProcedure,
 		svc.ListVehiclePositions,
@@ -100,6 +128,8 @@ func NewGTFSRealtimeServiceHandler(svc GTFSRealtimeServiceHandler, opts ...conne
 	)
 	return "/research.gtfs_realtime.v1.GTFSRealtimeService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
+		case GTFSRealtimeServiceListVehiclesPositionsProcedure:
+			gTFSRealtimeServiceListVehiclesPositionsHandler.ServeHTTP(w, r)
 		case GTFSRealtimeServiceListVehiclePositionsProcedure:
 			gTFSRealtimeServiceListVehiclePositionsHandler.ServeHTTP(w, r)
 		default:
@@ -110,6 +140,10 @@ func NewGTFSRealtimeServiceHandler(svc GTFSRealtimeServiceHandler, opts ...conne
 
 // UnimplementedGTFSRealtimeServiceHandler returns CodeUnimplemented from all methods.
 type UnimplementedGTFSRealtimeServiceHandler struct{}
+
+func (UnimplementedGTFSRealtimeServiceHandler) ListVehiclesPositions(context.Context, *connect.Request[v1.ListVehiclesPositionsRequest]) (*connect.Response[v1.ListVehiclesPositionsResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("research.gtfs_realtime.v1.GTFSRealtimeService.ListVehiclesPositions is not implemented"))
+}
 
 func (UnimplementedGTFSRealtimeServiceHandler) ListVehiclePositions(context.Context, *connect.Request[v1.ListVehiclePositionsRequest]) (*connect.Response[v1.ListVehiclePositionsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("research.gtfs_realtime.v1.GTFSRealtimeService.ListVehiclePositions is not implemented"))
